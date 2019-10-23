@@ -1,33 +1,10 @@
-'''
-# from typing import re
-
-import rtsp as r
-import time
-import requests as rq
-
-print('Input web controller IP\n')
-web_address = input()
-print('Input presentation shortcut number\n')
-input_number = input()
-presentation_address = 'http://' + web_address + '/api/?Function=Cut&Input=' + input_number
-return_to_address = 'http://' + web_address + '/api/?Function=Cut&Input=0'
-
-while 1:
-    case = int(input())
-    if case == 1:
-        print(rq.get(presentation_address))
-        time.sleep(5)
-        print(rq.get(return_to_address))
-    else:
-        break
-'''
-
 import rtsp as r
 import time
 import requests as rq
 import keyboard
 import configparser
 import cv2
+import numpy as np
 
 
 
@@ -52,7 +29,7 @@ def Presentation_Detect(web_addr, input_num, pr_ip):
     ret,frame = video_cap.read()
     while 1:
         ret1,frame1 = video_cap.read()
-        if frame.any() != frame1.any():
+        if np.any(frame != frame1):
             print(rq.get(presentation_address))
             time.sleep(5)
             print(rq.get(return_to_address))
