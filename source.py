@@ -17,10 +17,6 @@ def compare(image1, image2):
     rms = math.sqrt(functools.reduce(operator.add, map(lambda a, b: (a - b) ** 2, h1, h2)) / len(h1))
     return rms
 
-# __не используется__
-def equal(im1, im2):
-    return ImageChops.difference(im1, im2).getbbox() is None
-
 
 # получает настройки веб контроллера для vMix из файла Srttings.ini
 def GetConfig():
@@ -43,14 +39,13 @@ def Presentation_Detect(web_addr, input_num, pr_ip):
     return_to_address = web_addr + '/api/?Function=Cut&Input=0' # api адресс для переключения обратно в эфир потока на превью
     client = rtsp.Client(rtsp_server_uri=pr_ip) # начало работы с RTSP потоком презентации для сравнения кадров и отслеживания переключения
     image = client.read()
-    while not keyboard.is_pressed('shift+q'): # _____необходимо переделать выход из цикла_____
+    while 1:
         t0 = time.time() # технические выкладки 
         image1 = client.read() # технические выкладки 
         print(compare(image, image1)) # технические выкладки 
         t1 = time.time() # технические выкладки 
         print(t1-t0) # технические выкладки 
         k = compare(image, image) # коэффициент "изменения" кадра (______надо доработать______)
-
         if compare(image, image1) > k:
             image = client.read()
             print(rq.get(presentation_address)) # переключение на презентацию и вывод ответа
@@ -65,11 +60,41 @@ def Presentation_Detect(web_addr, input_num, pr_ip):
             '''
 
 
+def Change(web_address):
+    random.seed()
+    # Настройки vMix таковы:
+    # 1: презентация
+    # 2: rtsp://172.18.200.51:554/Streaming/Channels/1
+    # 3: rtsp://172.18.200.52:554/Streaming/Channels/1
+    # 4: rtsp://172.18.200.53:554/Streaming/Channels/1
+    # 5: rtsp://172.18.200.54:554/Streaming/Channels/1
+    # 6: rtsp://172.18.200.55:554/Streaming/Channels/1
+    # 7: rtsp://172.18.200.56:554/Streaming/Channels/1
+    number = ['2', '7', '4', '3', '6', '5']
+    # В списке - номера потоков камер в vMix.
+    # Переключение происходит именно в таком порядке. Закольцованно.
+    i = 0
+    print(number[i])
+    while not i == -1:
+        time_crowd = random.randint(5, 15)
+        time_speaker = random.randint(15, 35)
+        change_to = web_address + '/api/?Function=Cut&Input=' + number[i]
+        print('Переключение камер ', rq.get(url=change_to))
+        if (i % 2) == 0:
+            time.sleep(time_crowd)
+        else:
+            time.sleep(time_speaker)
+        i = i + 1
+        if i == 6:
+            i = 0
+
+
 def main():
     a, b, c = GetConfig()
     # print(a,b,c)
     # Presentation_Detect(a, b, c)
-    threading.Thread(target=Presentation_Detect, args=[a, b, c], daemon=True).start()
+    # threading.Thread(target=Presentation_Detect, args=[a, b, c], daemon=True).start()
+    threading.Thread(target=Change, args=[a], daemon=True).start()
     input('Press <Enter> to exit.\n')
     cv2.destroyAllWindows()
 
