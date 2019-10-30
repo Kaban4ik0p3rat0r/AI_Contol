@@ -1,14 +1,13 @@
 import rtsp
 import time
 import requests as rq
-import keyboard
 import configparser
 import cv2
 import math
 import operator
-from PIL import ImageChops
 import functools
 import threading
+import random
 
 # метод сравнения кадров
 def compare(image1, image2):
