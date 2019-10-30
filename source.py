@@ -8,6 +8,7 @@ import math
 import operator
 from PIL import ImageChops
 import functools
+import threading
 
 # метод сравнения кадров
 def compare(image1, image2):
@@ -67,7 +68,9 @@ def Presentation_Detect(web_addr, input_num, pr_ip):
 def main():
     a, b, c = GetConfig()
     # print(a,b,c)
-    Presentation_Detect(a, b, c)
+    # Presentation_Detect(a, b, c)
+    threading.Thread(target=Presentation_Detect, args=[a, b, c], daemon=True).start()
+    input('Press <Enter> to exit.\n')
     cv2.destroyAllWindows()
 
 
