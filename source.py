@@ -8,6 +8,9 @@ import operator
 import functools
 import threading
 import random
+from PIL import Image
+from PIL import ImageChops
+
 
 # метод сравнения кадров
 def compare(image1, image2):
@@ -38,7 +41,9 @@ def Presentation_Detect(web_addr, input_num, pr_ip):
     return_to_address = web_addr + '/api/?Function=Cut&Input=0' # api адресс для переключения обратно в эфир потока на превью
     client = rtsp.Client(rtsp_server_uri=pr_ip) # начало работы с RTSP потоком презентации для сравнения кадров и отслеживания переключения
     image = client.read()
+    image.save(open('IMG_Compare\First.jpg', 'wb'))
     random.seed()
+    im = Image.open('IMG_Compare\First.jpg')
     # Настройки vMix таковы:
     # 1: презентация
     # 2: rtsp://172.18.200.51:554/Streaming/Channels/1
@@ -55,15 +60,15 @@ def Presentation_Detect(web_addr, input_num, pr_ip):
         time_crowd = random.randint(5, 15) # время кадра на экране для аудитории
         time_speaker = random.randint(15, 35) # время кадра на экране для докладчика
         image1 = client.read()
-        print(compare(image, image1))
-        k = compare(image, image) # коэффициент "изменения" кадра (______надо доработать______)
-        if compare(image, image1) > k:
-            image = client.read()
+        image1.save(open('IMG_Compare\Second.jpg', 'wb'))
+        im1 = Image.open('IMG_Compare\Second.jpg') # коэффициент "изменения" кадра (______надо доработать______)
+        if not ImageChops.difference(im, im1).getpalette() is None:
+            im = Image.open('IMG_Compare\Second.jpg')
             print(rq.get(presentation_address)) # переключение на презентацию и вывод ответа
             time.sleep(5)
             print(rq.get(return_to_address)) # переключение на превью и вывод ответа
         else:
-            change_to = web_addr + '/api/?Function=Cut&Input=' + number[i] # 
+            change_to = web_addr + '/api/?Function=Cut&Input=' + number[i] #
             print('Переключение камер ', rq.get(url=change_to))
             if (i % 2) == 0:
                 time.sleep(time_crowd)
