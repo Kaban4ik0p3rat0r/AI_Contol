@@ -3,31 +3,20 @@ import time
 import requests as rq
 import configparser
 import cv2
-import math
-import operator
-import functools
 import threading
 import random
 from PIL import Image
 from PIL import ImageChops
 
 
-# метод сравнения кадров
-def compare(image1, image2):
-    h1 = image1.histogram()
-    h2 = image2.histogram()
-    rms = math.sqrt(functools.reduce(operator.add, map(lambda a, b: (a - b) ** 2, h1, h2)) / len(h1))
-    return rms
-
-
-# получает настройки веб контроллера для vMix из файла Srttings.ini
+# получает настройки веб контроллера для vMix из файла Settings.ini
 def GetConfig():
     try:
         config = configparser.ConfigParser()
         config.read('Settings.ini')
-        web_address = config.get("Settings", 'web_adress') # адрес контроллера
-        input_number = config.get("Settings", 'presentation_input_number') # номер потока презентации в vMix
-        presentation_ip = config.get("Settings",'presentation_rtsp_link') # ip презентационного потока
+        web_address = config.get("Settings", 'web_adress')  # адрес контроллера
+        input_number = config.get("Settings", 'presentation_input_number')  # номер потока презентации в vMix
+        presentation_ip = config.get("Settings", 'presentation_rtsp_link')  # ip презентационного потока
     except:
         web_address = 'http://192.168.100.16:5000'
         input_number = '1'
@@ -37,13 +26,6 @@ def GetConfig():
 
 #Detecting presentation change
 def Presentation_Detect(web_addr, input_num, pr_ip):
-    presentation_address = web_addr + '/api/?Function=Cut&Input=' + input_num # api адресс для переключения презентации в эфир
-    return_to_address = web_addr + '/api/?Function=Cut&Input=0' # api адресс для переключения обратно в эфир потока на превью
-    client = rtsp.Client(rtsp_server_uri=pr_ip) # начало работы с RTSP потоком презентации для сравнения кадров и отслеживания переключения
-    image = client.read()
-    image.save(open('IMG_Compare\First.jpg', 'wb'))
-    random.seed()
-    im = Image.open('IMG_Compare\First.jpg')
     # Настройки vMix таковы:
     # 1: презентация
     # 2: rtsp://172.18.200.51:554/Streaming/Channels/1
@@ -55,21 +37,28 @@ def Presentation_Detect(web_addr, input_num, pr_ip):
     # В списке numbers - номера потоков камер в vMix.
     # Переключение происходит именно в таком порядке. Закольцованно.
     number = ['2', '7', '4', '3', '6', '5']
+    presentation_address = web_addr + '/api/?Function=Cut&Input=' + input_num  # api адресс для переключения презентации в эфир
+    return_to_address = web_addr + '/api/?Function=Cut&Input=0'  # api адресс для переключения обратно в эфир потока на превью
+    client = rtsp.Client(rtsp_server_uri=pr_ip)  # начало работы с RTSP потоком презентации для сравнения кадров и отслеживания переключения
+    image = client.read()
+    image.save(open('IMG_Compare\First.jpg', 'wb'))  # сохранение "начлаьного" кадра в каталог IMG_Compare
+    random.seed()
+    im = Image.open('IMG_Compare\First.jpg')
     i = 0
     while 1:
-        time_crowd = random.randint(5, 15) # время кадра на экране для аудитории
-        time_speaker = random.randint(15, 35) # время кадра на экране для докладчика
+        time_crowd = random.randint(5, 15)  # время кадра на экране для аудитории
+        time_speaker = random.randint(15, 35)  # время кадра на экране для докладчика
         image1 = client.read()
-        image1.save(open('IMG_Compare\Second.jpg', 'wb'))
-        im1 = Image.open('IMG_Compare\Second.jpg') # коэффициент "изменения" кадра (______надо доработать______)
-        if not ImageChops.difference(im, im1).getpalette() is None:
-            im = Image.open('IMG_Compare\Second.jpg')
-            print(rq.get(presentation_address)) # переключение на презентацию и вывод ответа
-            time.sleep(5)
-            print(rq.get(return_to_address)) # переключение на превью и вывод ответа
+        image1.save(open('IMG_Compare\Second.jpg', 'wb'))  # сохранение текущего кадра в каталог IMG_Compare
+        im1 = Image.open('IMG_Compare\Second.jpg')
+        if not ImageChops.difference(im, im1).getpalette() is None:  # сравнение "начального" и текущего кадров
+            im = Image.open('IMG_Compare\Second.jpg')  # обновление "начального" кадра
+            print('Переключение на презентацию ', rq.get(url=presentation_address))  # переключение на презентацию и вывод ответа
+            time.sleep(5)  # время презентации в эфире
+            print('Переключение с презентации ', rq.get(url=return_to_address))  # переключение на превью и вывод ответа
         else:
-            change_to = web_addr + '/api/?Function=Cut&Input=' + number[i] #
-            print('Переключение камер ', rq.get(url=change_to))
+            change_to = web_addr + '/api/?Function=Cut&Input=' + number[i]  # выбор камеры на которую переключиться
+            print('Переключение между камерами ', rq.get(url=change_to))
             if (i % 2) == 0:
                 time.sleep(time_crowd)
             else:
