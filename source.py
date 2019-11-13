@@ -41,18 +41,30 @@ def Presentation_Detect(web_addr, input_num, pr_ip):
     return_to_address = web_addr + '/api/?Function=Cut&Input=0'  # api адресс для переключения обратно в эфир потока на превью
     client = rtsp.Client(rtsp_server_uri=pr_ip)  # начало работы с RTSP потоком презентации для сравнения кадров и отслеживания переключения
     image = client.read()
-    image.save(open('IMG_Compare\First.jpg', 'wb'))  # сохранение "начлаьного" кадра в каталог IMG_Compare
+    image.save(open('IMG_Compare\First.bmp', 'wb'))  # сохранение "начлаьного" кадра в каталог IMG_Compare
     random.seed()
-    im = Image.open('IMG_Compare\First.jpg')
+    im = Image.open('IMG_Compare\First.bmp')
     i = 0
     while 1:
         time_crowd = random.randint(5, 15)  # время кадра на экране для аудитории
         time_speaker = random.randint(15, 35)  # время кадра на экране для докладчика
         image1 = client.read()
-        image1.save(open('IMG_Compare\Second.jpg', 'wb'))  # сохранение текущего кадра в каталог IMG_Compare
-        im1 = Image.open('IMG_Compare\Second.jpg')
-        if not ImageChops.difference(im, im1).getpalette() is None:  # сравнение "начального" и текущего кадров
-            im = Image.open('IMG_Compare\Second.jpg')  # обновление "начального" кадра
+        t1 = time.time()
+        image1.save(open('IMG_Compare\Second.bmp', 'wb'))  # сохранение текущего кадра в каталог IMG_Compare
+        im1 = Image.open('IMG_Compare\Second.bmp')
+        image_d = ImageChops.difference(im, im1)
+        image_d.save(open('IMG_Compare\Diff.bmp', 'wb'))  # разница "начального" и текущего кадров
+        print(image_d.getpalette())  # попытка получить палитру для .jpg (__у меня постоянно выводит None__)
+
+        image_d2 = image_d.convert("P", palette=Image.ADAPTIVE, colors=256)  # первый параметр для .jpg = RGB
+        # при использовании convert("RGB", palette=Image.ADAPTIVE, colors=256) палитра не добавляется
+        print(image_d2.getpalette())
+        image_d2.save(open('IMG_Compare\Diff_1.bmp', 'wb'))
+
+        print(time.time() - t1)  # время обработки
+
+        if not image_d2.getpalette().count(0) == len(image_d2.getpalette()):  # сравнение нулей (не измененных элементов) и длины палитры
+            im = Image.open('IMG_Compare\Second.bmp')  # обновление "начального" кадра
             print('Переключение на презентацию ', rq.get(url=presentation_address))  # переключение на презентацию и вывод ответа
             time.sleep(5)  # время презентации в эфире
             print('Переключение с презентации ', rq.get(url=return_to_address))  # переключение на превью и вывод ответа
