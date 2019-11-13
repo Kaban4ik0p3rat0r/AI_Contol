@@ -56,14 +56,14 @@ def Presentation_Detect(web_addr, input_num, pr_ip):
         image_d.save(open('IMG_Compare\Diff.bmp', 'wb'))  # разница "начального" и текущего кадров
         print(image_d.getpalette())  # попытка получить палитру для .jpg (__у меня постоянно выводит None__)
 
-        image_d2 = image_d.convert("P", palette=Image.ADAPTIVE, colors=256)  # первый параметр для .jpg = RGB
+        image_d2 = image_d.convert("P", palette=Image.ADAPTIVE, colors=256)  # первый параметр по умолчанию = RGB
         # при использовании convert("RGB", palette=Image.ADAPTIVE, colors=256) палитра не добавляется
         print(image_d2.getpalette())
         image_d2.save(open('IMG_Compare\Diff_1.bmp', 'wb'))
 
         print(time.time() - t1)  # время обработки
 
-        if not image_d2.getpalette().count(0) == len(image_d2.getpalette()):  # сравнение нулей (не измененных элементов) и длины палитры
+        if not image_d2.getpalette().count(0) == len(image_d2.getpalette()):  # сравнение количества нулей (не измененных элементов) и длины палитры
             im = Image.open('IMG_Compare\Second.bmp')  # обновление "начального" кадра
             print('Переключение на презентацию ', rq.get(url=presentation_address))  # переключение на презентацию и вывод ответа
             time.sleep(5)  # время презентации в эфире
